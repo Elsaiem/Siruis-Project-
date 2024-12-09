@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.ClientDto;
+using Siruis_Project.Core.Dtos.TeamMemberDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using System;
@@ -19,95 +21,158 @@ namespace Siruis_Project.Service.Services.TeamMembers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<TeamMember> AddMember(TeamMember member)
+        public async Task<TeamMemberUpdateReq> AddMember(TeamMemberAddReq member)
         {
-            if (member == null) return null;
+            try
+            {
+                if (member == null)
+                    throw new ArgumentNullException(nameof(member), "Team Member data is null.");
 
+                var newMember = new TeamMember
+                {
+                    TeamName = member.TeamName,
+                    JobTitle = member.JobTitle,
+                };
 
-            await _unitOfWork.Repository<TeamMember>().AddAsync(member);
-            await _unitOfWork.CompleteAsync();
-            return member;
+                await _unitOfWork.Repository<TeamMember>().AddAsync(newMember);
+                await _unitOfWork.CompleteAsync();
+
+                return new TeamMemberUpdateReq
+                {
+                    Id=newMember.Id,
+                    TeamName = member.TeamName,
+                    JobTitle = member.JobTitle,
+                };
+
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while adding a client.");
+                throw new InvalidOperationException("An error occurred while adding the client.", ex);
+            }
         }
 
-        public async Task DeleteAllTeamMembers()
+        public async Task<bool> DeleteAllTeamMembers()
         {
-            _unitOfWork.Repository<TeamMember>().DeleteAll();
-            await _unitOfWork.CompleteAsync(); // Save the changes to the database
+            try
+            {
+                var members = await _unitOfWork.Repository<TeamMember>().GetAllAsync();
+                if (members == null || !members.Any())
+                    return false;
+
+                _unitOfWork.Repository<TeamMember>().DeleteAll();
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting all Members.");
+                return false;
+            }
         }
 
 
-        public async Task DeleteMember(int id)
+        public async Task<bool> DeleteMember(int id)
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var memberRepository = _unitOfWork.Repository<TeamMember>();
+                var client = await memberRepository.GetAsync(id);
+                if (client == null)
+                    return false;
 
-            var teamMemberRepository = _unitOfWork.Repository<TeamMember>();
-            if (teamMemberRepository == null)
+                memberRepository.Delete(client);
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("TeamMember repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting a Team Member by ID.");
+                return false;
             }
-
-            var result = await teamMemberRepository.GetAsync(id);
-
-            if (result == null)
-            {
-                throw new InvalidOperationException($"Team member with id {id} does not exist.");
-            }
-
-            teamMemberRepository.Delete(result);
-            await _unitOfWork.CompleteAsync(); // Save the changes
         }
 
 
 
-        public async Task<IEnumerable<TeamMember>> GetAllMembers()
+        public async Task<IEnumerable<TeamMemberUpdateReq>> GetAllMembers()
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var memberRepository = _unitOfWork.Repository<TeamMember>();
+                var members = await memberRepository.GetAllAsync();
+                if (members == null || !members.Any())
+                    return Enumerable.Empty<TeamMemberUpdateReq>();
 
-            var TeamMemberRepository = _unitOfWork.Repository<TeamMember>();
-            if (TeamMemberRepository == null)
+                var response = members.Select(member => new TeamMemberUpdateReq
+                {
+                    Id = member.Id,
+                    TeamName = member.TeamName,
+                    JobTitle = member.JobTitle,
+                });
+
+                return response;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Client repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving all Team members.");
+                throw new InvalidOperationException("An error occurred while retrieving Team members.", ex);
             }
-
-            var result = await TeamMemberRepository.GetAllAsync();
-             return result ?? Enumerable.Empty<TeamMember>();
         }
 
-        public async Task<TeamMember> GetMemberById(int id)
+
+        public async Task<TeamMemberUpdateReq> GetMemberById(int id)
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var member = await _unitOfWork.Repository<TeamMember>().GetAsync(id);
+                if (member is null) return null;
+                var response = new TeamMemberUpdateReq
+                {
+                   Id=member.Id,
+                   TeamName=member.TeamName,
+                   JobTitle=member.JobTitle,
 
-            var TeamMemberRepository = _unitOfWork.Repository<TeamMember>();
-            if (TeamMemberRepository == null)
+                };
+
+                return response ?? null;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Client repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving a Member by ID.");
+                throw new InvalidOperationException($"An error occurred while retrieving the Team memeber with ID {id}.", ex);
             }
-
-            var result = await TeamMemberRepository.GetAsync(id);
-            return result ?? null;
         }
 
-        public async Task<TeamMember> UpdateMember(TeamMember  teamMember)
+        public async Task<TeamMemberUpdateReq> UpdateMember(TeamMemberUpdateReq teamMember)
         {
-            var check = await _unitOfWork.Repository<TeamMember>().GetAsync(teamMember.Id);
-            if (check is null) return null;
+            try
+            {
+                if (teamMember == null)
+                    throw new ArgumentNullException(nameof(teamMember), "member update data is null.");
 
-            // Update properties explicitly
-            check.TeamName = teamMember.TeamName;
-            check.JobTitle = teamMember.JobTitle;
+                var existingMember = await _unitOfWork.Repository<TeamMember>().GetAsync(teamMember.Id);
+                if (existingMember == null)
+                    return null;
 
-            await _unitOfWork.Repository<TeamMember>().Update(check);
-            await _unitOfWork.CompleteAsync();
-            return check; // Return the updated entity
+                existingMember.TeamName = teamMember.TeamName;
+                existingMember.JobTitle = teamMember.JobTitle;
+
+                await _unitOfWork.Repository<TeamMember>().Update(existingMember);
+                await _unitOfWork.CompleteAsync();
+
+                return teamMember;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while updating a Team Member.");
+                throw new InvalidOperationException($"An error occurred while updating the Team Memeber with ID {teamMember.Id}.", ex);
+            }
         }
     }
 }

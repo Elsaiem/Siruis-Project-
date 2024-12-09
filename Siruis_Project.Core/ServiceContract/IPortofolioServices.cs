@@ -10,17 +10,17 @@ namespace Siruis_Project.Core.ServiceContract
 {
     public interface IPortofolioServices
     {
-        Task<IEnumerable<Portofolio>> GetAllPortofolios();
+        Task<IEnumerable<PortofolioUpdateReq>> GetAllPortofolios();
 
 
-        Task<Portofolio> GetPortofolioById(int id);
+        Task<PortofolioUpdateReq> GetPortofolioById(int id);
 
 
-        Task<Portofolio> AddPortofio(PorotofolioAddReq portofolio);
+        Task<PortofolioUpdateReq> AddPortofio(PorotofolioAddReq portofolio);
 
-        Task DeletePortofolioById(int id);
+        Task<bool> DeletePortofolioById(int id);
 
-        Task<Portofolio> UpdatePortofolio(PortofolioUpdateReq portofolio);
+        Task<PortofolioUpdateReq> UpdatePortofolio(PortofolioUpdateReq portofolio);
 
         Task<bool> DeleteAllPortofolio();
 

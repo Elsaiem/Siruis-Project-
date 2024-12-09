@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.IndustryDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
+using Siruis_Project.Service.Services.Clients;
 using Siruis_Project.Service.Services.Orders;
 
 namespace Siruis_Project.Api.Controllers
@@ -22,43 +24,139 @@ namespace Siruis_Project.Api.Controllers
         [HttpGet("GetAllIndustries")]
         public async Task<ActionResult<IEnumerable<Industry>>> GetAllIndustries()
         {
-            var result = await _industryServices.GetAllIndustries();
-
-            return Ok(result);
+            try
+            {
+                var result = await _industryServices.GetAllIndustries();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Industries retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving Industries.",
+                    error = ex.Message
+                });
+            }
         }
-        [HttpGet("GetIndustryById{id}")]
+        [HttpGet("GetIndustryById")]
         public async Task<ActionResult<Industry>> GetIndustryById(int id)
         {
-            var result = await _industryServices.GetIndustryById(id);
-            if (result is null) return BadRequest("Industry Not Found");
-            return Ok(result);
+            try
+            {
+                // Fetch the industry by ID using the service
+                var industry = await _industryServices.GetIndustryById(id);
+
+                // Check if the client exists
+                if (industry == null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        message = $"industry with ID {id} not found."
+                    })
+                    {
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
+
+                // Return the client details
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = "Industry retrieved successfully.",
+                    data = industry
+                })
+                {
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the Indutry.",
+                    error = ex.Message
+                })
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError
+                };
+            }
         }
         [HttpPost("AddIndustry")]
-        public async Task<ActionResult<Industry>> AddIndustry(Industry industry)
+        public async Task<ActionResult<IndustryUpdateReq>> AddIndustry(IndustryAddReq industry)
         {
-            if (industry == null) { return BadRequest("Invalid Industry"); }
-            var result = await _industryServices.AddIndustry(industry);
-            if (result == null) { return BadRequest("Can not add Industry"); }
-            return Ok(industry);
+            try
+            {
+                if (industry == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid Industry data provided."
+                    });
+
+                var result = await _industryServices.AddIndustry(industry);
+                if (result == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Failed to add the Industry."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Industry added successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while adding the Industry.",
+                    error = ex.Message
+                });
+            }
 
         }
 
-        [HttpDelete("DeleteIndustryById{id}")]
+        [HttpDelete("DeleteIndustryById")]
         public async Task<IActionResult> DeleteIndustryById(int id)
         {
-
-            var industry = await _industryServices.GetIndustryById(id);
-
-            if (industry == null)
+            try
             {
-                return NotFound($"Industry with id {id} does not exist.");
+                var success = await _industryServices.DeleteIndustryById(id);
+                if (!success)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Industry with ID {id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Industry deleted successfully."
+                });
             }
-
-            await _industryServices.DeleteIndustryById(id);
-
-            await _unitOfWork.CompleteAsync(); // Save the changes
-
-            return Ok($"Industry with id {id} has been deleted successfully.");
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting the Industry.",
+                    error = ex.Message
+                });
+            }
         }
 
 
@@ -66,24 +164,68 @@ namespace Siruis_Project.Api.Controllers
         [HttpDelete("DeleteAllIndustries")]
         public async Task<IActionResult> DeleteAllIndustries()
         {
-            await _industryServices.DeleteAllIndustries();
-            // Commit changes asynchronously
-            return NoContent(); // Return 204 No Content to indicate successful deletion
+            try
+            {
+                var success = await _industryServices.DeleteAllIndustries();
+                if (!success)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "No Industries available to delete."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "All industries deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting all industries.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpPost("UpdateIndustry")]
-        public async Task<ActionResult<Industry>> UpdateIndustry(Industry industry)
+        public async Task<ActionResult<IndustryUpdateReq>> UpdateIndustry(IndustryUpdateReq industry)
         {
-            if (industry == null)
+            try
             {
-                return BadRequest("Error");
+                if (industry == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid industry data provided."
+                    });
+
+                var result = await _industryServices.UpdateIndustry(industry);
+                if (result == null)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Industry with ID {industry.Id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Industry updated successfully.",
+                    data = result
+                });
             }
-            var check = await _industryServices.GetIndustryById(industry.Id);
-            if (check == null) { return BadRequest("Industry is not Exist"); }
-            var result = await _industryServices.UpdateIndustry(industry);
-
-            if (result == null) { return BadRequest("Can not Update Industry Data"); }
-
-            return Ok(industry);
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the Industry.",
+                    error = ex.Message
+                });
+            }
 
 
 

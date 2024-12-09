@@ -16,6 +16,7 @@ namespace Siruis_Project.Repository.Data.Configuration
             builder.Property(p => p.Id).IsRequired();
             builder.Property(p => p.TeamName).IsRequired();
             builder.Property(p => p.JobTitle).IsRequired();
+            
         }
     }
 }

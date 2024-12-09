@@ -1,4 +1,5 @@
-﻿using Siruis_Project.Core.Entities;
+﻿using Siruis_Project.Core.Dtos.IndustryDto;
+using Siruis_Project.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +10,20 @@ namespace Siruis_Project.Core.ServiceContract
 {
     public interface IIndustryServices
     {
-        Task<IEnumerable<Industry>> GetAllIndustries();
+        Task<IEnumerable<IndustryUpdateReq>> GetAllIndustries();
 
 
-        Task<Industry> GetIndustryById(int id);
+        Task<IndustryUpdateReq> GetIndustryById(int id);
 
 
-        Task<Industry> AddIndustry(Industry  industry);
+        Task<IndustryUpdateReq> AddIndustry(IndustryAddReq  industry);
 
 
-        Task DeleteIndustryById(int id);
+        Task<bool> DeleteIndustryById(int id);
 
-        Task<Industry> UpdateIndustry(Industry  industry);
+        Task<IndustryUpdateReq> UpdateIndustry(IndustryUpdateReq  industry);
 
-        Task DeleteAllIndustries();
+        Task<bool> DeleteAllIndustries();
 
 
 

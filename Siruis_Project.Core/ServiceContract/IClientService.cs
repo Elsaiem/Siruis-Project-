@@ -10,17 +10,17 @@ namespace Siruis_Project.Core.ServiceContract
 {
     public interface IClientService
     {
-        Task<IEnumerable<Client>> GetAllClients();
+        Task<IEnumerable<ClientUpdateReq>> GetAllClients();
 
-        Task<Client?> GetClientById(int id);
+        Task<ClientUpdateReq?> GetClientById(int id);
 
-        Task<ClientUpdateReq> AddCLient(ClientAddReq client);
+        Task<ClientUpdateReq> AddClient(ClientAddReq client);
 
-        Task<bool> DeleteCLientById(int id);
+        Task<bool> DeleteClientById(int id);
 
         Task<ClientUpdateReq> UpdateClient(ClientUpdateReq client);
 
-        Task<bool> DeleteAllClient();
+        Task<bool> DeleteAllClients();
 
 
     }

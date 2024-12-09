@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Siruis_Project.Core.Dtos.AuthDto;
 using Siruis_Project.Core.Entities.Identity;
 using Siruis_Project.Core.ServiceContract.IdentityServices;
+using System;
+using System.Threading.Tasks;
 
 namespace Siruis_Project.Api.Controllers
 {
@@ -20,45 +22,54 @@ namespace Siruis_Project.Api.Controllers
 
         public AccountController(IUserService userService, UserManager<AppUser> userManager, ITokenService tokenService, IMapper mapper)
         {
-
             _userService = userService;
             _userManager = userManager;
             _tokenService = tokenService;
             _mapper = mapper;
         }
-        [HttpPost("login")]// /api/Account/login
+
+        [HttpPost("login")] // /api/Account/login
         public async Task<ActionResult<UserDto>> Login(LoginDto login)
         {
-            var user = await _userService.LoginAsync(login);
+            try
+            {
+                var user = await _userService.LoginAsync(login);
 
-            if (user is null) { return Unauthorized("no user Found"); }
+                if (user is null)
+                {
+                    return Unauthorized(new { message = "No user found" });
+                }
 
-            return Ok(user);
-
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred during login.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred during login", error = ex.Message });
+            }
         }
 
         [HttpPost("UpdateRole")]
-        
         public async Task<ActionResult<UserDto>> UpdateRole([FromBody] UpdateRoleDto updateRoleDto)
         {
-            var user = await _userService.UpdateRoleAsync(updateRoleDto);
+            try
+            {
+                var user = await _userService.UpdateRoleAsync(updateRoleDto);
 
-            if (user is null) { return Unauthorized("no user Found"); }
+                if (user is null)
+                {
+                    return Unauthorized(new { message = "No user found" });
+                }
 
-
-            return Ok(user);  
-
-            
-            
-
-
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while updating user role.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while updating the role", error = ex.Message });
+            }
         }
-
-
-
-
-
-
-
     }
 }

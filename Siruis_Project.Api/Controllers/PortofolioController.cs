@@ -4,6 +4,7 @@ using Siruis_Project.Core;
 using Siruis_Project.Core.Dtos.PortofolioD;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
+using Siruis_Project.Service.Services.Clients;
 using Siruis_Project.Service.Services.Industries;
 
 namespace Siruis_Project.Api.Controllers
@@ -24,43 +25,139 @@ namespace Siruis_Project.Api.Controllers
         [HttpGet("GetAllPortofolios")]
         public async Task<ActionResult<IEnumerable<Portofolio>>> GetAllPortofolios()
         {
-            var result = await _portofolioServices.GetAllPortofolios();
-
-            return Ok(result);
+            try
+            {
+                var result = await _portofolioServices.GetAllPortofolios();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Portofolios retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving portofolios.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpGet("GetPortofolioById")]
         public async Task<ActionResult<Portofolio>> GetPortofolioById(int id)
         {
-            var result = await _portofolioServices.GetPortofolioById(id);
-            if (result is null) return BadRequest("Porotofolio is Not Found");
-            return Ok(result);
+            try
+            {
+                // Fetch the Portofolio by ID using the service
+                var portofolio = await _portofolioServices.GetPortofolioById(id);
+
+                // Check if the Portofolio exists
+                if (portofolio == null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        message = $"portofolio with ID {id} not found."
+                    })
+                    {
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
+
+                // Return the Portofolio details
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = "portofolio retrieved successfully.",
+                    data = portofolio
+                })
+                {
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the portofolio.",
+                    error = ex.Message
+                })
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError
+                };
+            }
         }
         [HttpPost("AddPortofolio")]
-        public async Task<ActionResult<Portofolio>> AddPortofolio(PorotofolioAddReq portofolio)
+        public async Task<ActionResult<PortofolioUpdateReq>> AddPortofolio(PorotofolioAddReq portofolio)
         {
-            if (portofolio == null) { return BadRequest("Invalid Portofolio"); }
-            var result = await _portofolioServices.AddPortofio(portofolio);
-            if (result == null) { return BadRequest("Can not add portofolio"); }
-            return Ok(portofolio);
+            try
+            {
+                if (portofolio == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid portofolio data provided."
+                    });
+
+                var result = await _portofolioServices.AddPortofio(portofolio);
+                if (result == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Failed to add the portofolio."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "portofolio added successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while adding the portofolio.",
+                    error = ex.Message
+                });
+            }
 
         }
 
         [HttpDelete("DeletePortofolioById")]
         public async Task<IActionResult> DeletePortofolioById(int id)
         {
-
-            var portofolio = await _portofolioServices.GetPortofolioById(id);
-
-            if (portofolio == null)
+            try
             {
-                return NotFound($"portofolio with id {id} does not exist.");
+                var success = await _portofolioServices.DeletePortofolioById(id);
+                if (!success)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"portofolio with ID {id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "portofolio deleted successfully."
+                });
             }
-
-            await _portofolioServices.DeletePortofolioById(id);
-
-            await _unitOfWork.CompleteAsync(); // Save the changes
-
-            return Ok($"portofolio with id {id} has been deleted successfully.");
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting the portofolio.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpDelete("DeleteAllPortofolios")]
                 public async Task<IActionResult> DeleteAllPortofolios()
@@ -94,19 +191,41 @@ namespace Siruis_Project.Api.Controllers
         }
 
         [HttpPost("UpdatePortofolio")]
-        public async Task<ActionResult<Portofolio>> UpdatePortofolio(PortofolioUpdateReq portofolio)
+        public async Task<ActionResult<PortofolioUpdateReq>> UpdatePortofolio(PortofolioUpdateReq portofolio)
         {
-            if (portofolio == null)
+            try
             {
-                return BadRequest("Error");
+                if (portofolio == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid portofolio data provided."
+                    });
+
+                var result = await _portofolioServices.UpdatePortofolio(portofolio);
+                if (result == null)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"portofolio with ID {portofolio.Id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "portofolio updated successfully.",
+                    data = result
+                });
             }
-            var check = await _portofolioServices.GetPortofolioById(portofolio.Id);
-            if (check == null) { return BadRequest("Portofolio is not Exist"); }
-            var result = await _portofolioServices.UpdatePortofolio(portofolio);
-
-            if (result == null) { return BadRequest("Can not Update Portofolio Data"); }
-
-            return Ok(portofolio);
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the portofolio.",
+                    error = ex.Message
+                });
+            }
 
 
 

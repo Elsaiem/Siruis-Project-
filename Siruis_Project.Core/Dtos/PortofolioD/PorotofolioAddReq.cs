@@ -11,8 +11,10 @@ namespace Siruis_Project.Core.Dtos.PortofolioD
     (
         int CLient_Id,
         string   Img_Url,
+
         int Industry_Id,
         string Description,
+        string? Url,
         Types type
     );
 }

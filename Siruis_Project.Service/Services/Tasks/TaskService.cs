@@ -1,6 +1,8 @@
 ﻿using AutoMapper.Execution;
 using Microsoft.EntityFrameworkCore;
 using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.ClientDto;
+using Siruis_Project.Core.Dtos.TaskDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using System;
@@ -21,85 +23,170 @@ namespace Siruis_Project.Service.Services.Tasks
         }
 
 
-        public async Task<TaskMember> AddTask(TaskMember task)
+        public async Task<TaskUpdateReq> AddTask(TaskAddReq task)
         {
-            if (task == null) return null;
+            try
+            {
+              
+                if (task == null)
+                    throw new ArgumentNullException(nameof(task), "Task data is null.");
+                var checkmember = await _unitOfWork.Repository<TeamMember>().GetAsync(task.TeamMember_Id);
+                if (checkmember == null) throw new ArgumentNullException(nameof(task), "Team member is not exist.");
+                var newTask = new TaskMember
+                {
+                    TaskDesc = task.TaskDesc,
+                    TaskType = task.TaskType,
+                    TeamMember_Id = task.TeamMember_Id,
+                    DateEnd = task.DateEnd,
+                };
 
+                await _unitOfWork.Repository<TaskMember>().AddAsync(newTask);
+                await _unitOfWork.CompleteAsync();
 
-            await _unitOfWork.Repository<TaskMember>().AddAsync(task);
-            await _unitOfWork.CompleteAsync();
-            return task;
+                return new TaskUpdateReq
+                {
+                    Id = newTask.Id,
+                    TaskDesc = task.TaskDesc,
+                    TaskType = task.TaskType,
+                    TeamMember_Id = task.TeamMember_Id,
+                    DateEnd = task.DateEnd,
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while adding a Task.");
+                throw new InvalidOperationException("An error occurred while adding the Task.", ex);
+            }
         }
 
        
 
-        public async Task DeleteAllTasks()
+        public async Task<bool> DeleteAllTasks()
         {
-            _unitOfWork.Repository<TaskMember>().DeleteAll();
-            await _unitOfWork.CompleteAsync(); // Save the changes to the database
+            try
+            {
+                var tasks = await _unitOfWork.Repository<TaskMember>().GetAllAsync();
+                if (tasks == null || !tasks.Any())
+                    return false;
+
+                _unitOfWork.Repository<TaskMember>().DeleteAll();
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting all Tasks.");
+                return false;
+            }
         }
 
-        public async Task DeleteTask(int id)
+        public async Task<bool> DeleteTask(int id)
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var tskRepository = _unitOfWork.Repository<TaskMember>();
+                var client = await tskRepository.GetAsync(id);
+                if (client == null)
+                    return false;
 
-            var TaskRepository = _unitOfWork.Repository<TaskMember>();
-            if (TaskRepository == null)
+                tskRepository.Delete(client);
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("TeamMember repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting a Task by ID.");
+                return false;
             }
-
-            var result = await TaskRepository.GetAsync(id);
-
-            if (result == null)
-            {
-                throw new InvalidOperationException($"Team member with id {id} does not exist.");
-            }
-
-            TaskRepository.Delete(result);
-            await _unitOfWork.CompleteAsync(); // Save the changes
         }
 
-        public async Task<IEnumerable<TaskMember>> GetAllTasks()
+        public async Task<IEnumerable<TaskUpdateReq>> GetAllTasks()
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var taskRepository = _unitOfWork.Repository<TaskMember>();
+                var tasks = await taskRepository.GetAllAsync();
+                if (tasks == null || !tasks.Any())
+                    return Enumerable.Empty<TaskUpdateReq>();
 
-            var TaskMemberRepository = _unitOfWork.Repository<TaskMember>();
-            if (TaskMemberRepository == null)
+                var response = tasks.Select(task => new TaskUpdateReq
+                {
+                    Id = task.Id,
+                    TaskDesc = task.TaskDesc,
+                    TaskType = task.TaskType,
+                    TeamMember_Id = task.TeamMember_Id,
+                    DateEnd = task.DateEnd,
+                });
+
+                return response;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Client repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving all Tasks.");
+                throw new InvalidOperationException("An error occurred while retrieving Tasks.", ex);
             }
-
-            var result = await TaskMemberRepository.GetAllAsync();
-            return result ?? Enumerable.Empty<TaskMember>();
         }
 
-        public async Task<TaskMember> GetTaskById(int id)
+        public async Task<TaskUpdateReq> GetTaskById(int id)
         {
-            var task = await _unitOfWork.Repository<TaskMember>().GetAsync(id);
-            if (task == null) return null;
-            return task;
+            try
+            {
+                var task = await _unitOfWork.Repository<TaskMember>().GetAsync(id);
+                if (task is null) return null;
+                var response= new TaskUpdateReq
+                {
+                    Id = task.Id,
+                    TaskDesc = task.TaskDesc,
+                    TaskType = task.TaskType,
+                    TeamMember_Id = task.TeamMember_Id,
+                    DateEnd = task.DateEnd,
+                };
+
+                return response ?? null;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving a Task by ID.");
+                throw new InvalidOperationException($"An error occurred while retrieving the Task with ID {id}.", ex);
+            }
         }
 
-        public async Task<TaskMember> UpdateTask(TaskMember  taskMember)
+        public async Task<TaskUpdateReq> UpdateTask(TaskUpdateReq  taskMember)
         {
-            var check = await _unitOfWork.Repository<TaskMember>().GetAsync(taskMember.Id);
-            if (check is null) return null;
+            try
+            {
+                if (taskMember == null)
+                    throw new ArgumentNullException(nameof(taskMember), "Task update data is null.");
 
-            // Update properties explicitly
-            check.TaskDesc = taskMember.TaskDesc;
-            check.TaskType = taskMember.TaskType;
-            check.DateEnd = taskMember.DateEnd;
+                var existingtask = await _unitOfWork.Repository<TaskMember>().GetAsync(taskMember.Id);
+                if (existingtask == null)
+                    return null;
+                var checkmember = await _unitOfWork.Repository<TeamMember>().GetAsync(taskMember.TeamMember_Id);
+                if (checkmember == null) return null;
 
-            await _unitOfWork.Repository<TaskMember>().Update(check);
-            await _unitOfWork.CompleteAsync();
-            return check; // Return the updated entity
+
+
+                existingtask.TaskDesc = taskMember.TaskDesc;
+                existingtask.TaskType = taskMember.TaskType;
+                existingtask.TeamMember_Id = taskMember.TeamMember_Id;
+                existingtask.DateEnd = taskMember.DateEnd;
+
+                await _unitOfWork.Repository<TaskMember>().Update(existingtask);
+                await _unitOfWork.CompleteAsync();
+
+                return taskMember;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while updating a client.");
+                throw new InvalidOperationException($"An error occurred while updating the client with ID {taskMember.Id}.", ex);
+            }
         }
 
 

@@ -26,43 +26,140 @@ namespace Siruis_Project.Api.Controllers
         [HttpGet("GetAllOrders")]
         public async Task<ActionResult<IEnumerable<Order>>> GetAllOrder()
         {
-            var result = await _orderServices.GetAllOrders();
-
-            return Ok(result);
+            try
+            {
+                var result = await _orderServices.GetAllOrders();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Orders retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving Orders.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpGet("GetOrderById")]
-        public async Task<ActionResult<Order>> GetOrderById(int id)
+        public async Task<ActionResult> GetOrderById(int id)
         {
-            var result = await _orderServices.GetOrderById(id);
+            try
+            {
+                // Fetch the Order by ID using the service
+                var order = await _orderServices.GetOrderById(id);
 
-            return Ok(result);
+                // Check if the order exists
+                if (order == null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        message = $"Order with ID {id} not found."
+                    })
+                    {
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
+
+                // Return the client details
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = "Order retrieved successfully.",
+                    data = order
+                })
+                {
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the order.",
+                    error = ex.Message
+                })
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError
+                };
+            }
         }
 
 
         [HttpPost("AddOrder")]
-        public async Task<ActionResult<Order>> AddOrder(OrderAddReq order)
+        public async Task<ActionResult> AddOrder(OrderAddReq order)
         {
-            if (order == null) { return BadRequest("Invalid Order"); }
-            var result = await _orderServices.AddOrder(order);
-            if (result == null) { return BadRequest("Can not add Order"); }
-            return Ok(order);
+            try
+            {
+                if (order == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid order data provided."
+                    });
+
+                var result = await _orderServices.AddOrder(order);
+                if (result == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Failed to add the order."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "order added successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while adding the order.",
+                    error = ex.Message
+                });
+            }
 
         }
         [HttpDelete("DeleteOrderById")]
         public async Task<IActionResult> DeleteOrderById(int id)
         {
-            var order = await _orderServices.GetOrderById(id);
-
-            if (order == null)
+            try
             {
-                return NotFound($"portofolio with id {id} does not exist.");
+                var success = await _orderServices.DeleteOrder(id);
+                if (!success)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"order with ID {id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "order deleted successfully."
+                });
             }
-
-            await _orderServices.DeleteOrder(id);
-
-            await _unitOfWork.CompleteAsync(); // Save the changes
-
-            return Ok($"Order with id {id} has been deleted successfully.");
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting the order.",
+                    error = ex.Message
+                });
+            }
 
         }
 
@@ -98,38 +195,84 @@ namespace Siruis_Project.Api.Controllers
         }
 
         [HttpPost("UpdateOrder")]
-        public async Task<ActionResult<Order>> UpdateOrder(OrderUpdateReq order)
+        public async Task<ActionResult> UpdateOrder(OrderUpdateReq order)
         {
-            if (order == null)
+            try
             {
-                return BadRequest("Error");
+                if (order == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid order data provided."
+                    });
+
+                var result = await _orderServices.UpdateOrder(order);
+                if (result == null)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Order with ID {order.Id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "order updated successfully.",
+                    data = result
+                });
             }
-            var check = await _orderServices.GetOrderById(order.Id);
-            if (check == null) { return BadRequest("Order is not Exist"); }
-            var result = await _orderServices.UpdateOrder(order);
-
-            if (result == null) { return BadRequest("Can not Update Order Data"); }
-
-            return Ok(order);
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the order.",
+                    error = ex.Message
+                });
+            }
 
 
 
         }
         [HttpPost("UpdateStatus")]
-        public async Task<IActionResult> UpdateStatus(OrderUpdateStatusReq  orderUpdateStatusReq)
+        public async Task<IActionResult> UpdateStatus(OrderUpdateStatusReq orderUpdateStatusReq)
         {
-            var check = await _orderServices.GetOrderById(orderUpdateStatusReq.Id);
-            if (check == null)
+            try
             {
-                return BadRequest("Order is not Exist");
+                if (orderUpdateStatusReq == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid order status update data provided."
+                    });
 
+                var check = await _orderServices.GetOrderById(orderUpdateStatusReq.Id);
+                if (check == null)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Order with ID {orderUpdateStatusReq.Id} not found."
+                    });
+
+                await _orderServices.UpdateStatus(orderUpdateStatusReq);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Order status updated successfully."
+                });
             }
-            await _orderServices.UpdateStatus(orderUpdateStatusReq);
-
-            return NoContent();
-
-
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the order status.",
+                    error = ex.Message
+                });
+            }
         }
+
     }
 
 }

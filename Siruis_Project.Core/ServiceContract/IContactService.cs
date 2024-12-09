@@ -1,4 +1,5 @@
-﻿using Siruis_Project.Core.Entities;
+﻿using Siruis_Project.Core.Dtos.ContactDto;
+using Siruis_Project.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +11,13 @@ namespace Siruis_Project.Core.ServiceContract
     public interface IContactService
     {
 
-        Task<IEnumerable< Contact>> GetAllContacts();
+        Task<IEnumerable<Contact>> GetAllContacts();
 
        
 
-        Task<Contact> AddContact(Contact contact);
+        Task<ContactGetReq> AddContact(ContactAddReq contact);
 
-        void DeleteAllContacts();
+        Task<bool> DeleteAllContacts();
 
     }
 }

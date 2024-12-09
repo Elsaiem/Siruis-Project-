@@ -1,4 +1,6 @@
 ﻿using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.ClientDto;
+using Siruis_Project.Core.Dtos.ContactDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using System;
@@ -19,35 +21,75 @@ namespace Siruis_Project.Service.Services.Contacts
         }
         public async Task<IEnumerable<Contact>> GetAllContacts()
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
+                var contactRepository = _unitOfWork.Repository<Contact>();
+                var result = await contactRepository.GetAllAsync();
+                return result ?? Enumerable.Empty<Contact>();
             }
-
-            var clientRepository = _unitOfWork.Repository<Contact>();
-            if (clientRepository == null)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Client repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving all clients.");
+                throw new InvalidOperationException("An error occurred while retrieving Contact.", ex);
             }
-
-            var result = await clientRepository.GetAllAsync();
-            return result ?? Enumerable.Empty<Contact>();
         }
 
-        public async Task<Contact> AddContact(Contact contact)
+        public async Task<ContactGetReq> AddContact(ContactAddReq contact)
         {
-            if (contact == null) return null;
+            try
+            {
+                if (contact == null)
+                    throw new ArgumentNullException(nameof(contact), "Client data is null.");
 
+                var newcontact = new Contact
+                {
+                    Name = contact.Name,
+                    Email = contact.Email,
+                    Subject = contact.Subject,
+                    Message = contact.Message,
+                };
 
-            await _unitOfWork.Repository<Contact>().AddAsync(contact);
-            await _unitOfWork.CompleteAsync();
-            return contact;
-        }
+                await _unitOfWork.Repository<Contact>().AddAsync(newcontact);
+                await _unitOfWork.CompleteAsync();
 
-        public void DeleteAllContacts()
+                return new ContactGetReq
+                {
+                    Id = newcontact.Id,
+                    Name = contact.Name,
+                    Email = contact.Email,
+                    Subject = contact.Subject,
+                    Message = contact.Message,
+                };
+            } 
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while adding a Contact.");
+                throw new InvalidOperationException("An error occurred while adding the Contact.", ex);
+    }
+
+}
+
+        public async Task<bool> DeleteAllContacts()
         {
-              _unitOfWork.Repository<Contact>().DeleteAll();
-             
+            try
+            {
+                var contacts = await _unitOfWork.Repository<Contact>().GetAllAsync();
+                if (contacts == null || !contacts.Any())
+                    return false;
+
+                _unitOfWork.Repository<Contact>().DeleteAll();
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting all Contacts.");
+                return false;
+            }
+
         }
 
       

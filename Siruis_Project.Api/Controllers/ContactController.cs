@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.ContactDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using Siruis_Project.Service.Services.Clients;
@@ -22,26 +23,93 @@ namespace Siruis_Project.Api.Controllers
         [HttpGet("GetAllContacts")]
         public async Task<ActionResult<IEnumerable<Contact>>> GetAllContacts()
         {
-            var result = await _contactService.GetAllContacts();
-
-            return Ok(result);
+            try
+            {
+                var result = await _contactService.GetAllContacts();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Contacts retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving Contacts.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpPost("AddContact")]
-        public async Task<ActionResult<Contact>> AddContact(Contact contact)
+        public async Task<ActionResult<ContactGetReq>> AddContact(ContactAddReq contact)
         {
-            if (contact == null) { return BadRequest("Invalid Contact"); }
-            var result = await _contactService.AddContact(contact);
-            if (result == null) { return BadRequest("Can not add Contact"); }
-            return Ok(contact);
+            try
+            {
+                if (contact == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid Contact data provided."
+                    });
+
+                var result = await _contactService.AddContact(contact);
+                if (result == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Failed to add the Contact."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Contact added successfully.",
+                    data = result
+                });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while adding the Contact.",
+                    error = ex.Message
+                });
+            }
 
         }
         [HttpDelete("DeleteAllContacts")]
         public async Task<IActionResult> DeleteAllContacts()
         {
-            _contactService.DeleteAllContacts();
-            _unitOfWork.CompleteAsync();
-            
-            return NoContent(); // Return 204 No Content to indicate successful deletion
+            try
+            {
+                var success = await _contactService.DeleteAllContacts();
+                if (!success)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "No Contacts available to delete."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "All Contacts deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting all Contacts.",
+                    error = ex.Message
+                });
+            }
         }
 
 

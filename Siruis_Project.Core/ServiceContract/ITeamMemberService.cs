@@ -1,4 +1,5 @@
-﻿using Siruis_Project.Core.Entities;
+﻿using Siruis_Project.Core.Dtos.TeamMemberDto;
+using Siruis_Project.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +10,17 @@ namespace Siruis_Project.Core.ServiceContract
 {
     public interface ITeamMemberService
     {
-        Task<IEnumerable< TeamMember>> GetAllMembers();
+        Task<IEnumerable<TeamMemberUpdateReq>> GetAllMembers();
 
-        Task<TeamMember> GetMemberById(int id);
+        Task<TeamMemberUpdateReq> GetMemberById(int id);
 
-        Task<TeamMember> AddMember(TeamMember member);
+        Task<TeamMemberUpdateReq> AddMember(TeamMemberAddReq member);
 
-        Task DeleteMember(int id);
+        Task<bool> DeleteMember(int id);
 
-        Task<TeamMember> UpdateMember(TeamMember member);
+        Task<TeamMemberUpdateReq> UpdateMember(TeamMemberUpdateReq member);
 
-       Task DeleteAllTeamMembers();
+       Task<bool> DeleteAllTeamMembers();
 
 
     }

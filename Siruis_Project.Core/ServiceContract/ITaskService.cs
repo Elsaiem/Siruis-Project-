@@ -1,4 +1,5 @@
-﻿using Siruis_Project.Core.Entities;
+﻿using Siruis_Project.Core.Dtos.TaskDto;
+using Siruis_Project.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,20 +11,17 @@ namespace Siruis_Project.Core.ServiceContract
     public interface ITaskService
     {
 
-        Task<IEnumerable<TaskMember>> GetAllTasks();
+        Task<IEnumerable<TaskUpdateReq>> GetAllTasks();
 
-        Task<TaskMember> GetTaskById(int id);
-        Task<TaskMember> AddTask(TaskMember task);
+        Task<TaskUpdateReq> GetTaskById(int id);
+        Task<TaskUpdateReq> AddTask(TaskAddReq task);
 
+        Task<bool> DeleteTask(int id);
 
-
-
-        Task DeleteTask(int id);
-
-        Task<TaskMember> UpdateTask(TaskMember task);
+        Task<TaskUpdateReq> UpdateTask(TaskUpdateReq task);
 
        
 
-         Task DeleteAllTasks();
+         Task<bool> DeleteAllTasks();
     }
 }

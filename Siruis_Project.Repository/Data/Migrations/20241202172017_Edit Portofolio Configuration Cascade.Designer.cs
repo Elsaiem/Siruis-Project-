@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Siruis_Project.Repository.Data.Contexts;
 
@@ -11,9 +12,11 @@ using Siruis_Project.Repository.Data.Contexts;
 namespace Siruis_Project.Repository.Data.Migrations
 {
     [DbContext(typeof(SiruisDbContext))]
-    partial class SiruisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241202172017_Edit Portofolio Configuration Cascade")]
+    partial class EditPortofolioConfigurationCascade
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

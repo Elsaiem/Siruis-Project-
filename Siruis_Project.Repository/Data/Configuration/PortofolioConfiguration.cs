@@ -22,12 +22,12 @@ namespace Siruis_Project.Repository.Data.Configuration
 
             builder.HasOne(p => p.client)
             .WithMany(c => c.portofolios) // Adjust navigation property
-            .HasForeignKey(p => p.CLient_Id).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(p => p.CLient_Id).OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(p => p.industry)
             .WithMany(c => c.Portofolios) // Adjust navigation property
             .HasForeignKey(p => p.Industry_Id)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
 
             builder.Property(p => p.type)

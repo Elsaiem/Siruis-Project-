@@ -1,9 +1,11 @@
 ﻿using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.ClientDto;
 using Siruis_Project.Core.Dtos.PortofolioD;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using System;
 using System.Collections.Generic;
+using System.Formats.Tar;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,77 +22,146 @@ namespace Siruis_Project.Service.Services.Portofolios
         }
 
 
-        public async Task<IEnumerable<Portofolio>> GetAllPortofolios()
+        public async Task<IEnumerable<PortofolioUpdateReq>> GetAllPortofolios()
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var portofolioRepository = _unitOfWork.Repository<Portofolio>();
+                var portofolios = await portofolioRepository.GetAllAsync();
+                if (portofolios == null || !portofolios.Any())
+                    return Enumerable.Empty<PortofolioUpdateReq>();
 
-            var PortofolioRepository = _unitOfWork.Repository<Portofolio>();
-            if (PortofolioRepository == null)
+                var response = portofolios.Select(portofolio => new PortofolioUpdateReq
+                {
+                    Id = portofolio.Id,
+                    CLient_Id = portofolio.CLient_Id,
+                    Img_Url = portofolio.Img_Url,
+                    Url = portofolio.Url,
+                    Industry_Id = portofolio.Industry_Id,
+                    Description = portofolio.Description,
+                    type = portofolio.type
+                });
+
+                return response;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Portofolio repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving all portofolios.");
+                throw new InvalidOperationException("An error occurred while retrieving portofolios.", ex);
             }
-
-            var result = await PortofolioRepository.GetAllAsync();
-            return result ?? Enumerable.Empty<Portofolio>();
         }
 
-        public async Task<Portofolio> GetPortofolioById(int id)
+
+        public async Task<PortofolioUpdateReq> GetPortofolioById(int id)
         {
-            var portofolio = await _unitOfWork.Repository<Portofolio>().GetAsync(id);
-            if (portofolio == null) return null;
-            return portofolio;
+            try
+            {
+                var portofolio = await _unitOfWork.Repository<Portofolio>().GetAsync(id);
+                if (portofolio is null) return null;
+                var response = new PortofolioUpdateReq
+                {
+                    Id=portofolio.Id,
+                    CLient_Id = portofolio.CLient_Id,
+                    Img_Url = portofolio.Img_Url,
+                    Url=portofolio.Url,
+                    Industry_Id = portofolio.Industry_Id,
+                    Description = portofolio.Description,
+                    type = portofolio.type
+                };
+
+                return response ?? null;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while retrieving a portofolio by ID.");
+                throw new InvalidOperationException($"An error occurred while retrieving the portofolio with ID {id}.", ex);
+            }
         }
 
      
 
-        public async Task<Portofolio> AddPortofio(PorotofolioAddReq portofolio)
+        public async Task<PortofolioUpdateReq> AddPortofio(PorotofolioAddReq portofolio)
         {
-            if (portofolio == null) return null;
-
-            var checkclient=_unitOfWork.Repository<Client>().GetAsync(portofolio.CLient_Id);
-            if (checkclient is null) return null;
-            var checkIndustry = _unitOfWork.Repository<Industry>().GetAsync(portofolio.Industry_Id);
-            if (checkIndustry is null) return null;
-
-            
-            
-
-            var response = new Portofolio
+            try
             {
-                CLient_Id=portofolio.CLient_Id,
-                Img_Url=portofolio.Img_Url,
-                Industry_Id=portofolio.Industry_Id,
-                Description = portofolio.Description,
-                type= portofolio.type
-            };
-            
+                if (portofolio == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Porotofolio data is null.");
+                var checkClient = await _unitOfWork.Repository<Client>().GetAsync(portofolio.CLient_Id);
+                if (checkClient == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Client  is not Exist.");
+                var checkindustry = await _unitOfWork.Repository<Industry>().GetAsync(portofolio.Industry_Id);
+                if (checkindustry == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Industry is not Exist.");
 
-             await _unitOfWork.Repository<Portofolio>().AddAsync(response);
-             await _unitOfWork.CompleteAsync();
-            return response;
+                var response = new Portofolio
+                {
+                    CLient_Id = portofolio.CLient_Id,
+                    Img_Url = portofolio.Img_Url,
+                    Industry_Id = portofolio.Industry_Id,
+                    Description = portofolio.Description,
+                    type = portofolio.type
+                };
+
+                await _unitOfWork.Repository<Portofolio>().AddAsync(response);
+                await _unitOfWork.CompleteAsync();
+
+                return new PortofolioUpdateReq
+                {
+                    Id=response.Id,
+                    CLient_Id = portofolio.CLient_Id,
+                    Img_Url = portofolio.Img_Url,
+                    Url = portofolio.Url,
+                    Industry_Id = portofolio.Industry_Id,
+                    Description = portofolio.Description,
+                    type = portofolio.type
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while adding a Portofolio.");
+                throw new InvalidOperationException("An error occurred while adding the Portofolio.", ex);
+            }
         }
-        public async Task<Portofolio> UpdatePortofolio(PortofolioUpdateReq portofolio)
+        
+        public async Task<PortofolioUpdateReq> UpdatePortofolio(PortofolioUpdateReq portofolio)
         {
-            var check = await _unitOfWork.Repository<Portofolio>().GetAsync(portofolio.Id);
-            if (check is null) return null;
-            
-            var checkclient = _unitOfWork.Repository<Client>().GetAsync(portofolio.CLient_Id);
-            if (checkclient is null) return null;
-            var checkIndustry = _unitOfWork.Repository<Industry>().GetAsync(portofolio.Industry_Id);
-            if (checkIndustry is null) return null;
+            try
+            {
+                if (portofolio == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Client update data is null.");
 
-            check.CLient_Id = portofolio.CLient_Id;
-            check.Industry_Id = portofolio.Industry_Id;
-            check.Img_Url = portofolio.Img_Url;
-            check.Description = portofolio.Description;
-            check.type = portofolio.type;
+                var existingportofolio = await _unitOfWork.Repository<Portofolio>().GetAsync(portofolio.Id);
+                if (existingportofolio == null)
+                    return null;
+                var checkClient = await _unitOfWork.Repository<Client>().GetAsync(portofolio.CLient_Id);
+                if (checkClient == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Client  is not Exist.");
+                var checkindustry = await _unitOfWork.Repository<Industry>().GetAsync(portofolio.Industry_Id);
+                if (checkindustry == null)
+                    throw new ArgumentNullException(nameof(portofolio), "Industry is not Exist.");
 
-            await _unitOfWork.Repository<Portofolio>().Update(check);
-            await _unitOfWork.CompleteAsync();
-            return check; // Return the updated entity
+                existingportofolio.Img_Url = portofolio.Img_Url;
+                existingportofolio.CLient_Id = portofolio.CLient_Id;
+                existingportofolio.Industry_Id = portofolio.Industry_Id;
+                existingportofolio.Description = portofolio.Description;
+                existingportofolio.Url = portofolio.Url;
+                existingportofolio.type = portofolio.type;
+               
+               
+                await _unitOfWork.Repository<Portofolio>().Update(existingportofolio);
+                await _unitOfWork.CompleteAsync();
+
+                return portofolio;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while updating a portofolio.");
+                throw new InvalidOperationException($"An error occurred while updating the portotflio with ID {portofolio.Id}.", ex);
+            }
         }
 
 
@@ -100,33 +171,43 @@ namespace Siruis_Project.Service.Services.Portofolios
 
         public async Task<bool> DeleteAllPortofolio()
         {
-            _unitOfWork.Repository<Portofolio>().DeleteAll();
-            await _unitOfWork.CompleteAsync();
-            return true;
+            try
+            {
+                var portofolios = await _unitOfWork.Repository<Portofolio>().GetAllAsync();
+                if (portofolios == null || !portofolios.Any())
+                    return false;
+
+                _unitOfWork.Repository<Portofolio>().DeleteAll();
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting all portoflios.");
+                return false;
+            }
         }
 
-        public async Task DeletePortofolioById(int id)
+        public async Task<bool> DeletePortofolioById(int id)
         {
-            if (_unitOfWork == null)
+            try
             {
-                throw new InvalidOperationException("Unit of Work is not initialized.");
-            }
+                var portofolioRepository = _unitOfWork.Repository<Portofolio>();
+                var portofolio = await portofolioRepository.GetAsync(id);
+                if (portofolio == null)
+                    return false;
 
-            var PortofolioRepository = _unitOfWork.Repository<Portofolio>();
-            if (PortofolioRepository == null)
+                portofolioRepository.Delete(portofolio);
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            catch (Exception ex)
             {
-                throw new InvalidOperationException("Portofolio repository is not initialized.");
+                // Log the exception if needed
+                // Logger.LogError(ex, "Error occurred while deleting a client by ID.");
+                return false;
             }
-
-            var result = await PortofolioRepository.GetAsync(id);
-
-            if (result == null)
-            {
-                throw new InvalidOperationException($"Portofolio with id {id} does not exist.");
-            }
-
-            PortofolioRepository.Delete(result);
-            await _unitOfWork.CompleteAsync(); // Save the changes
         }
 
 

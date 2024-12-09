@@ -20,28 +20,112 @@ namespace Siruis_Project.Api.Controllers
         }
         //count Orders
 
+        // Count Orders
         [HttpGet("CountAllOrders")]
         public async Task<IActionResult> CountOrders()
         {
-            var count = await _unitOfWork.Repository<Order>().CountEntity();
-            return Ok(new { Count = count }); // Returning count as a JSON object
+            try
+            {
+                var count = await _unitOfWork.Repository<Order>().CountEntity();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Order count retrieved successfully.",
+                    data = new { Count = count }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the order count.",
+                    error = ex.Message
+                });
+            }
         }
 
-
-
-        //Count CLients
+        // Count Clients
         [HttpGet("CountAllClients")]
         public async Task<IActionResult> CountAllClients()
         {
-            var count = await _unitOfWork.Repository<Client>().CountEntity();
-            return Ok(new { Count = count }); // Returning count as a JSON object
+            try
+            {
+                var count = await _unitOfWork.Repository<Client>().CountEntity();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Client count retrieved successfully.",
+                    data = new { Count = count }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the client count.",
+                    error = ex.Message
+                });
+            }
         }
-        //Count Portofolio
-        [HttpGet("CountAllPortotfolios")]
-        public async Task<IActionResult> CountAllPortotfolios()
+
+        // Count Portfolios
+        [HttpGet("CountAllPortfolios")]
+        public async Task<IActionResult> CountAllPortfolios()
         {
-            var count = await _unitOfWork.Repository<Portofolio>().CountEntity();
-            return Ok(new { Count = count }); // Returning count as a JSON object
+            try
+            {
+                var count = await _unitOfWork.Repository<Portofolio>().CountEntity();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Portfolio count retrieved successfully.",
+                    data = new { Count = count }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the portfolio count.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // Count All Entities
+        [HttpGet("CountAll")]
+        public async Task<IActionResult> CountAll()
+        {
+            try
+            {
+                var countClient = await _unitOfWork.Repository<Client>().CountEntity();
+                var countPortfolio = await _unitOfWork.Repository<Portofolio>().CountEntity();
+                var countOrder = await _unitOfWork.Repository<Order>().CountEntity();
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Counts retrieved successfully.",
+                    data = new
+                    {
+                        CountClient = countClient,
+                        CountPortfolio = countPortfolio,
+                        CountOrder = countOrder
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the counts.",
+                    error = ex.Message
+                });
+            }
         }
 
 

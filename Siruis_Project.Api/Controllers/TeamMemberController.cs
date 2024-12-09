@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Siruis_Project.Core;
+using Siruis_Project.Core.Dtos.TeamMemberDto;
 using Siruis_Project.Core.Entities;
 using Siruis_Project.Core.ServiceContract;
 using Siruis_Project.Service.Services.Clients;
@@ -22,54 +23,206 @@ namespace Siruis_Project.Api.Controllers
         [HttpGet("GetAllTeamMembers")]
         public async Task<ActionResult<IEnumerable<TeamMember>>> GetAllTeamMembers()
         {
-            var result = await _teamMemberService.GetAllMembers();
-
-            return Ok(result);
+            try
+            {
+                var result = await _teamMemberService.GetAllMembers();
+                return Ok(new
+                {
+                    success = true,
+                    message = "Members retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving Members.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpGet("GetTeamMember")]
         public async Task<ActionResult<TeamMember>> GetTeamMember( int id)
         {
-            var result = await _teamMemberService.GetMemberById(id);
+            try
+            {
+                // Fetch the member by ID using the service
+                var member = await _teamMemberService.GetMemberById(id);
 
-            return Ok(result);
+                // Check if the member exists
+                if (member == null)
+                {
+                    return new JsonResult(new
+                    {
+                        success = false,
+                        message = $"Member with ID {id} not found."
+                    })
+                    {
+                        StatusCode = StatusCodes.Status404NotFound
+                    };
+                }
+
+                // Return the member details
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = "member retrieved successfully.",
+                    data = member
+                })
+                {
+                    StatusCode = StatusCodes.Status200OK
+                };
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                return new JsonResult(new
+                {
+                    success = false,
+                    message = "An error occurred while retrieving the member.",
+                    error = ex.Message
+                })
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError
+                };
+            }
         }
         [HttpPost("AddMember")]
-        public async Task<ActionResult<TeamMember>> AddMember(TeamMember member)
+        public async Task<ActionResult<TeamMemberUpdateReq>> AddMember(TeamMemberAddReq member)
         {
-            if (member == null) { return BadRequest("Invalid member"); }
-            var result = await _teamMemberService.AddMember(member);
-            if (result == null) { return BadRequest("Can not add member"); }
-            return Ok(member);
+            try
+            {
+                if (member == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid Member data provided."
+                    });
+
+                var result = await _teamMemberService.AddMember(member);
+                if (result == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Failed to add the member."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Member added successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while adding the member.",
+                    error = ex.Message
+                });
+            }
 
         }
 
         [HttpDelete("DeleteAllTeamMember")]
         public async Task<IActionResult> DeleteAllTeamMember()
         {
-           await _teamMemberService.DeleteAllTeamMembers();
-              // Commit changes asynchronously
-            return NoContent(); // Return 204 No Content to indicate successful deletion
+            try
+            {
+                var success = await _teamMemberService.DeleteAllTeamMembers();
+                if (!success)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "No Members available to delete."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "All Members deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting all Members.",
+                    error = ex.Message
+                });
+            }
         }
         [HttpDelete("DeleteTeammember")]
-        public async Task DeleteTeammember(int id)
+        public async Task<IActionResult> DeleteTeammember(int id)
         {
-            await _teamMemberService.DeleteMember(id);
+            try
+            {
+                var success = await _teamMemberService.DeleteMember(id);
+                if (!success)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Memebr with ID {id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Member deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while deleting the Member.",
+                    error = ex.Message
+                });
+            }
         }
 
         [HttpPost("UpdateTeamMember")]
-        public async Task<ActionResult<TeamMember>> UpdateTeamMember(TeamMember member)
+        public async Task<ActionResult<TeamMemberUpdateReq>> UpdateTeamMember(TeamMemberUpdateReq member)
         {
-            if (member == null)
+            try
             {
-                return BadRequest("Error");
-            }
-            var check =await _teamMemberService.GetMemberById(member.Id);
-            if (check == null) { return BadRequest("Member is not Exist"); }
-            var result =await _teamMemberService.UpdateMember(member);
-          
-            if (result == null) { return BadRequest("Can not Update Member Data"); }
+                if (member == null)
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Invalid Member data provided."
+                    });
 
-            return Ok(member);
+                var result = await _teamMemberService.UpdateMember(member);
+                if (result == null)
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"member with ID {member.Id} not found."
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "member updated successfully.",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = "An error occurred while updating the Member.",
+                    error = ex.Message
+                });
+            }
 
 
 

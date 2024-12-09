@@ -10,19 +10,19 @@ namespace Siruis_Project.Core.ServiceContract
 {
     public interface IOrderServices
     {
-        Task<IEnumerable<Order>> GetAllOrders();
+        Task<IEnumerable<OrderUpdateReq>> GetAllOrders();
 
 
-        Task<Order> GetOrderById(int id);
+        Task<OrderUpdateReq> GetOrderById(int id);
 
 
-        Task<Order> AddOrder(OrderAddReq order);
+        Task<OrderUpdateReq> AddOrder(OrderAddReq order);
 
 
-        Task DeleteOrder(int id);
+        Task<bool> DeleteOrder(int id);
 
-        Task<Order> UpdateOrder(OrderUpdateReq order);
-        Task UpdateStatus(OrderUpdateStatusReq statusReq);
+        Task<OrderUpdateReq> UpdateOrder(OrderUpdateReq order);
+        Task<OrderUpdateStatusReq> UpdateStatus(OrderUpdateStatusReq statusReq);
 
         Task<bool> DeleteAllOrders();
 

@@ -18,7 +18,7 @@ namespace Siruis_Project.Repository.Data.Configuration
             builder.Property(p => p.DateEnd).IsRequired();
             builder.Property(p => p.TeamMember_Id).IsRequired();
 
-            builder.HasOne(t=>t.teamMember).WithMany(m=>m.tasks).HasForeignKey(t=>t.TeamMember_Id);
+            builder.HasOne(t=>t.teamMember).WithMany(m=>m.tasks).HasForeignKey(t=>t.TeamMember_Id).OnDelete(DeleteBehavior.Cascade);
 
 
 
